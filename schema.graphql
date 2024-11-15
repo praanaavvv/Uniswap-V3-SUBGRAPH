@@ -1,29 +1,75 @@
-type FeeAmountEnabled @entity(immutable: true) {
-  id: Bytes!
-  fee: Int! # uint24
-  tickSpacing: Int! # int24
-  blockNumber: BigInt!
-  blockTimestamp: BigInt!
-  transactionHash: Bytes!
-}
-
-type OwnerChanged @entity(immutable: true) {
-  id: Bytes!
-  oldOwner: Bytes! # address
-  newOwner: Bytes! # address
-  blockNumber: BigInt!
-  blockTimestamp: BigInt!
-  transactionHash: Bytes!
-}
-
 type PoolCreated @entity(immutable: true) {
   id: Bytes!
-  token0: Bytes! # address
-  token1: Bytes! # address
-  fee: Int! # uint24
-  tickSpacing: Int! # int24
-  pool: Bytes! # address
+  token0: Bytes!
+  token1: Bytes!
+  fee: Int!
+  tickSpacing: Int!
+  pool: Bytes!
   blockNumber: BigInt!
   blockTimestamp: BigInt!
   transactionHash: Bytes!
+}
+
+type Pool @entity {
+  id: ID!
+  token0: Token!
+  token1: Token!
+  fee: BigInt!
+  createdTimestamp: BigInt!
+  swaps: [Swap!]! @derivedFrom(field: "pool")
+}
+
+type Token @entity {
+  id: ID!
+  symbol: String!
+  name: String!
+  decimals: Int!
+}
+
+
+type Swap @entity {
+  id: ID!
+  pool: Pool!
+  token0: Token!
+  token1: Token!
+  sender: Wallet!
+  recipient: Wallet!
+  amount0: BigInt!
+  amount1: BigInt!
+  sqrtPriceX96: BigInt!
+  liquidity: BigInt!
+  tick: BigInt!
+  timestamp: BigInt!
+  transactionHash: String!
+}
+
+type Wallet @entity {
+  id: ID!
+  swapsSent: [Swap!] @derivedFrom(field: "sender")
+  swapsReceived: [Swap!] @derivedFrom(field: "recipient")
+  tokenProfits: [WalletTokenProfit!] @derivedFrom(field: "wallet")
+}
+
+type WalletDayData @entity {
+  id: ID!
+  date: Int!
+  wallet: Wallet!
+  
+}
+
+type WalletTokenDayData @entity {
+  id: ID!
+  date: Int!
+  wallet: Wallet!
+  token: Token!
+  amountBought: BigDecimal!
+  dailyProfit: BigDecimal!          # New field to store daily profit in token
+  cumulativeProfit: BigDecimal!     # New field to store cumulative profit in token
+}
+
+type WalletTokenProfit @entity {
+  id: ID!                # Format: walletId-tokenId
+  wallet: Wallet!
+  token: Token!
+  cumulativeProfit: BigDecimal!
 }

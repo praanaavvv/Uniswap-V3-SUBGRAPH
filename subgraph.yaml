@@ -1,32 +1,48 @@
-specVersion: 1.0.0
-indexerHints:
-  prune: auto
+specVersion: 0.0.4
 schema:
   file: ./schema.graphql
 dataSources:
-  - kind: ethereum
-    name: UniswapV3Factory
+  - kind: ethereum/contract
+    name: Factory
     network: mainnet
     source:
-      address: "0x1f98431c8ad98523631ae4a59f267346ea31f984"
-      abi: UniswapV3Factory
-      startBlock: 12369621
+      address: '0x1f98431c8ad98523631ae4a59f267346ea31f984'
+      abi: Factory
     mapping:
       kind: ethereum/events
-      apiVersion: 0.0.7
+      apiVersion: 0.0.6
       language: wasm/assemblyscript
       entities:
-        - FeeAmountEnabled
-        - OwnerChanged
-        - PoolCreated
+        - Pool
+        - Token
       abis:
-        - name: UniswapV3Factory
+        - name: Factory
           file: ./abis/UniswapV3Factory.json
+        - name: ERC20
+          file: ./abis/erc20.json
       eventHandlers:
-        - event: FeeAmountEnabled(indexed uint24,indexed int24)
-          handler: handleFeeAmountEnabled
-        - event: OwnerChanged(indexed address,indexed address)
-          handler: handleOwnerChanged
         - event: PoolCreated(indexed address,indexed address,indexed uint24,int24,address)
           handler: handlePoolCreated
-      file: ./src/uniswap-v-3-factory.ts
+      file: src/mappings/uniswap-v-3-factory.ts
+
+templates:
+  - kind: ethereum/contract
+    name: Pool
+    network: mainnet
+    source:
+      abi: Pool
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.6
+      language: wasm/assemblyscript
+      entities:
+        - Swap
+        - Wallet
+        - WalletPool
+      abis:
+        - name: Pool
+          file: ./abis/pool.json
+      eventHandlers:
+        - event: Swap(indexed address,indexed address,int256,int256,uint160,uint128,int24)
+          handler: handleSwap
+      file: src/mappings/pool.ts

@@ -1,53 +1,80 @@
+// tests/uniswap-v-3-factory.test.ts
+
 import {
   assert,
   describe,
   test,
   clearStore,
   beforeAll,
-  afterAll
-} from "matchstick-as/assembly/index"
-import { Address } from "@graphprotocol/graph-ts"
-import { FeeAmountEnabled } from "../generated/schema"
-import { FeeAmountEnabled as FeeAmountEnabledEvent } from "../generated/UniswapV3Factory/UniswapV3Factory"
-import { handleFeeAmountEnabled } from "../src/uniswap-v-3-factory"
-import { createFeeAmountEnabledEvent } from "./uniswap-v-3-factory-utils"
+  afterAll,
+} from "matchstick-as/assembly/index";
+import { Address, BigInt, ByteArray } from "@graphprotocol/graph-ts";
+import { handlePoolCreated } from ".././src/mappings/uniswap-v-3-factory";
+import { createPoolCreatedEvent } from "./uniswap-v-3-factory-utils";
 
 // Tests structure (matchstick-as >=0.5.0)
 // https://thegraph.com/docs/en/developer/matchstick/#tests-structure-0-5-0
 
-describe("Describe entity assertions", () => {
+describe("Test handlePoolCreated function", () => {
   beforeAll(() => {
-    let fee = 123
-    let tickSpacing = 123
-    let newFeeAmountEnabledEvent = createFeeAmountEnabledEvent(fee, tickSpacing)
-    handleFeeAmountEnabled(newFeeAmountEnabledEvent)
-  })
+    // Create mock data
+    let token0 = Address.fromString("0x0000000000000000000000000000000000000001");
+    let token1 = Address.fromString("0x0000000000000000000000000000000000000002");
+    let fee = 3000;
+    let tickSpacing = 60;
+    let pool = Address.fromString("0x0000000000000000000000000000000000000003");
+    let timestamp = BigInt.fromI32(1638316800); // Example timestamp
+    let blockNumber = BigInt.fromI32(13700000); // Example block number
+    let transactionHash = ByteArray.fromHexString(
+      "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef"
+    );
+
+    // Create mock event
+    let event = createPoolCreatedEvent(
+      token0,
+      token1,
+      fee,
+      tickSpacing,
+      pool,
+      timestamp,
+      blockNumber,
+      transactionHash
+    );
+
+    // Call the handler with the mock event
+    handlePoolCreated(event);
+  });
 
   afterAll(() => {
-    clearStore()
-  })
+    clearStore();
+  });
 
-  // For more test scenarios, see:
-  // https://thegraph.com/docs/en/developer/matchstick/#write-a-unit-test
+  test("Pool entity created and stored", () => {
+    // Assert that one Pool entity is created
+    assert.entityCount("Pool", 1);
 
-  test("FeeAmountEnabled created and stored", () => {
-    assert.entityCount("FeeAmountEnabled", 1)
+    // The Pool entity's ID is the pool address
+    let poolId = "0x0000000000000000000000000000000000000003";
 
-    // 0xa16081f360e3847006db660bae1c6d1b2e17ec2a is the default address used in newMockEvent() function
-    assert.fieldEquals(
-      "FeeAmountEnabled",
-      "0xa16081f360e3847006db660bae1c6d1b2e17ec2a-1",
-      "fee",
-      "123"
-    )
-    assert.fieldEquals(
-      "FeeAmountEnabled",
-      "0xa16081f360e3847006db660bae1c6d1b2e17ec2a-1",
-      "tickSpacing",
-      "123"
-    )
+    // Assert that the Pool entity has the correct data
+    assert.fieldEquals("Pool", poolId, "id", poolId);
+    assert.fieldEquals("Pool", poolId, "token0", "0x0000000000000000000000000000000000000001");
+    assert.fieldEquals("Pool", poolId, "token1", "0x0000000000000000000000000000000000000002");
+    assert.fieldEquals("Pool", poolId, "fee", "3000");
+    assert.fieldEquals("Pool", poolId, "createdTimestamp", "1638316800");
+    // Add more asserts for other fields if necessary
 
-    // More assert options:
-    // https://thegraph.com/docs/en/developer/matchstick/#asserts
-  })
-})
+    // Assert that Token entities are created
+    assert.entityCount("Token", 2);
+
+    // Token0
+    let token0Id = "0x0000000000000000000000000000000000000001";
+    assert.fieldEquals("Token", token0Id, "id", token0Id);
+    // You can add more asserts for token fields like symbol, name, decimals, etc.
+
+    // Token1
+    let token1Id = "0x0000000000000000000000000000000000000002";
+    assert.fieldEquals("Token", token1Id, "id", token1Id);
+    // Add more asserts for token1 fields as needed
+  });
+});
